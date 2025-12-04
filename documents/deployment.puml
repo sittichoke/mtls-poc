@@ -1,0 +1,24 @@
+@startuml
+title mTLS PoC - Deployment Diagram
+
+actor "Client\n(curl / Postman / Insomnia)" as CLIENT
+
+node "macOS Host" as HOST {
+  folder "certs\n(./certs)" as CERTS
+
+  node "Docker Engine" as DOCKER {
+    node "gateway\n(nginx:1.27-alpine)\nport 443 (mapped to 8443)" as GATEWAY
+    node "api\n(Go HTTP server)\nport 8080" as API
+  }
+}
+
+' การสื่อสารระหว่าง client กับ gateway (mTLS)
+CLIENT --> GATEWAY : HTTPS 8443\n(mTLS: client.crt + client.key)
+
+' การสื่อสารระหว่าง gateway กับ api (ไม่มี TLS)
+GATEWAY --> API : HTTP 8080\n(reverse proxy)
+
+' การ mount certs จาก host เข้า gateway
+CERTS --> GATEWAY : bind mount\n./certs -> /etc/nginx/certs
+
+@enduml

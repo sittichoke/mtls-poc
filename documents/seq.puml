@@ -1,0 +1,20 @@
+@startuml mTLS_Sequence
+title mTLS PoC - mTLS Request Flow
+
+actor Client
+participant "Nginx Gateway\n(mTLS terminator)" as GW
+participant "Go API\n(http://api:8080)" as API
+
+Client -> GW: HTTPS GET /hello\n(with or without client cert)
+
+alt Missing or invalid client certificate
+  GW --> Client: TLS alert / 400 / 403\n(mTLS verification failed)
+else Valid client certificate
+  GW -> GW: Verify client certificate\nagainst CA (ca.crt)
+  GW -> API: HTTP GET /hello\nX-SSL-Client-Subject\nX-SSL-Client-Verify
+  API -> API: Handle request\nread forwarded headers
+  API --> GW: 200 OK\nJSON body
+  GW --> Client: 200 OK\nJSON body over TLS
+end
+
+@enduml
